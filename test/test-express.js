@@ -1,3 +1,5 @@
+/* eslint-disable capitalized-comments */
+/* eslint-disable no-trailing-spaces */
 const test = require('ava');
 const supertest = require('supertest');
 const express = require('express');
@@ -98,17 +100,7 @@ test.serial('POST /api/jobs/requeue should requeue the job', async t => {
 });
 
 test.serial('POST /api/jobs/retry should retry the job', async t => {
-  const job = await new Promise((resolve, reject) => {
-    agenda.create('Test Job', {})
-    .schedule('in 4 minutes')
-    .save()
-    .then(job => {
-      resolve(job);
-    })
-    .catch(err => {
-      reject(err);
-    });
-  });
+  const job = await agenda.now('Test Job', {});
 
   const res = await request.post('/api/jobs/retry')
     .send({
@@ -116,8 +108,7 @@ test.serial('POST /api/jobs/retry should retry the job', async t => {
     })
     .set('Accept', 'application/json');
 
-  t.false('newJobs' in res.body);
-
+  t.truthy(res.nextRunAt);
   const count = await agenda._collection.count({}, null);
-  t.is(count, 2);
+  t.is(count, 1);
 });
