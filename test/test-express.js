@@ -96,3 +96,28 @@ test.serial('POST /api/jobs/requeue should requeue the job', async t => {
   const count = await agenda._collection.count({}, null);
   t.is(count, 2);
 });
+
+test.serial('POST /api/jobs/retry should retry the job', async t => {
+  const job = await new Promise((resolve, reject) => {
+    agenda.create('Test Job', {})
+    .schedule('in 4 minutes')
+    .save()
+    .then(job => {
+      resolve(job);
+    })
+    .catch(err => {
+      reject(err);
+    });
+  });
+
+  const res = await request.post('/api/jobs/retry')
+    .send({
+      jobIds: [job.attrs._id]
+    })
+    .set('Accept', 'application/json');
+
+  t.false('newJobs' in res.body);
+
+  const count = await agenda._collection.count({}, null);
+  t.is(count, 2);
+});
