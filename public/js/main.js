@@ -154,13 +154,17 @@ $(function () {
     el: '#details-pane',
     initialize: function (options) {
       this.jobItems = options.jobItems
-      _.bindAll(this, 'render', 'getSelectedJobs', 'requeueJobs', 'allowDeleteJobs', 'deleteJobs')
+      _.bindAll(
+        this, 'render', 'getSelectedJobs', 'requeueJobs',
+        'allowDeleteJobs', 'deleteJobs', 'retryJobs'
+      )
       this.listenTo(this.jobItems, 'update', this.render)
       this.listenTo(this.jobItems, 'change', this.render)
       this.render()
     },
     events: {
       'click [data-action=requeue-jobs]': 'requeueJobs',
+      'click [data-action=retry-jobs]': 'retryJobs',
       'click [data-action=delete-jobs]': 'allowDeleteJobs',
       'click [data-action=delete-jobs].deleteable': 'deleteJobs'
     },
@@ -180,6 +184,13 @@ $(function () {
       .success(function () {
         App.trigger('refreshData')
       })
+    },
+    retryJobs: function () {
+      var selectedJobIds = this.getSelectedJobs().map(function (j) { return j.get('_id') })
+      postJobs('retry', selectedJobIds)
+        .success(function () {
+          App.trigger('refreshData')
+        })
     },
     allowDeleteJobs: function () {
       this.$('[data-action=delete-jobs]').addClass('deleteable').text('Confirm delete selection')
@@ -220,12 +231,16 @@ $(function () {
     model: JobItemModel,
     template: _.template($('#job-item-details-template').html()),
     initialize: function () {
-      _.bindAll(this, 'render', 'close', 'requeueJob', 'allowDeleteJob', 'deleteJob')
+      _.bindAll(
+        this, 'render', 'close', 'requeueJob',
+        'allowDeleteJob', 'deleteJob', 'retryJob'
+      )
       this.listenTo(this.model, 'change', this.render)
     },
     events: {
       'click .close': 'close',
       'click [data-action=requeue]': 'requeueJob',
+      'click [data-action=retry]': 'retryJob',
       'click [data-action=delete]': 'allowDeleteJob',
       'click [data-action=delete].deleteable': 'deleteJob'
     },
@@ -239,6 +254,13 @@ $(function () {
         $(e.currentTarget).remove()
         App.trigger('refreshData')
       })
+    },
+    retryJob: function (e) {
+      postJobs('retry', [this.model.get('job')._id])
+        .success(function () {
+          $(e.currentTarget).remove()
+          App.trigger('refreshData')
+        })
     },
     allowDeleteJob: function (e) {
       $(e.currentTarget).addClass('deleteable').text('Confirm deletion')
